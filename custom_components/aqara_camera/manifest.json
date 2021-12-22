@@ -1,0 +1,10 @@
+{
+    "domain": "aqara_camera",
+    "name": "Aqara Camera",
+    "config_flow": true,
+    "documentation": "https://github.com/niceboygithub/AqaraCamera",
+    "requirements": ["zeroconf"],
+    "codeowners": ["@niceboygithub"],
+    "version": "0.1.0",
+    "iot_class": "local_polling"
+  }
