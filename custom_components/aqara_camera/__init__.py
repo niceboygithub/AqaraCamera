@@ -38,7 +38,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         raise CannotConnect
 
     # Validate data by sending a request to the camera
-    ret, _ = await hass.async_add_executor_job(camera.get_product_all_info)
+    ret, _ = await hass.async_add_executor_job(camera.get_product_info)
 
     if ret == ERROR_AQARA_CAMERA_UNAVAILABLE:
         raise CannotConnect

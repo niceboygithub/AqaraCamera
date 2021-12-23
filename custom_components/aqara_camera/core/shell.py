@@ -17,7 +17,7 @@ class TelnetShell(Telnet):
                 name in device_name for name in ['g3'])):
             self._aqara_property = True
             login_name = 'root'
-        self.read_until(b"login: ", timeout=10)
+        self.read_until(b"login: ", timeout=3)
         if (device_name and any(
                 name in device_name for name in ['g3'])):
             self._suffix = "/ # "
@@ -26,7 +26,7 @@ class TelnetShell(Telnet):
         if password:
             command = "{}\n".format(login_name)
             self.write(command.encode())
-            self.read_until(b"Password: ", timeout=10)
+            self.read_until(b"Password: ", timeout=3)
             self.run_command(password)
         else:
             self.run_command(login_name)
@@ -38,9 +38,9 @@ class TelnetShell(Telnet):
     def run_command(self, command: str, as_bytes=False) -> Union[str, bytes]:
         """Run command and return it result."""
         # pylint: disable=broad-except
-        aqara_timeout = 30
+        aqara_timeout = 10
         if self._aqara_property:
-            aqara_timeout = 10
+            aqara_timeout = 3
         try:
             self.write(command.encode() + b"\n")
             suffix = "\r\n{}".format(self._suffix)

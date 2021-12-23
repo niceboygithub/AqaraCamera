@@ -28,6 +28,8 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     if not ret:
         raise CannotConnect
 
+    await hass.async_add_executor_job(camera.get_device_info)
+
     async_add_entities([HassAqaraCamera(camera, config_entry)])
 
 
@@ -49,7 +51,7 @@ class HassAqaraCamera(Camera):
         """Handle entity addition to hass."""
         # Get motion detection status
         ret, response = await self.hass.async_add_executor_job(
-            self._session.get_product_all_info
+            self._session.get_product_info
         )
 
         if ret == -3:
@@ -79,6 +81,30 @@ class HassAqaraCamera(Camera):
 
         return None
 
+    @property
+    def motion_detection_enabled(self):
+        return False
+
+    @property
+    def brand(self):
+        return self._session.brand
+
+    @property
+    def model(self):
+        return self._session.model
+
+    @property
+    def device_info(self):
+        return {
+            "identifiers": {
+                (DOMAIN, slugify(f"{self._name}_{self._unique_id}"))
+            },
+            "name": self._name,
+            "manufacturer": self._session.brand,
+            "model": self._session.model,
+            "sw_version": self._session.fw_version,
+        }
+
     def camera_image(
         self, width: int | None = None, height: int | None = None
     ) -> bytes | None:
@@ -87,7 +113,7 @@ class HassAqaraCamera(Camera):
 
     async def stream_source(self):
         """Return the stream source."""
-        self._session.get_product_all_info()
+        self._session.get_product_info()
         if len(self._session.camera_rtsp_url) >= 1:
             return self._session.camera_rtsp_url
 
