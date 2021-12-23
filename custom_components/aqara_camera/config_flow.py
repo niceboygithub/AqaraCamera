@@ -78,7 +78,9 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             raise InvalidResponse
 
         # Try to get camera name
-        ret = await self.hass.async_add_executor_job(camera.get_device_info)
+        await self.hass.async_add_executor_job(camera.get_device_info)
+
+        await self.hass.async_add_executor_job(camera.prepare)
 
         dev_name = f"{ret[CONF_NAME]}"
 

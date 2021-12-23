@@ -1,0 +1,66 @@
+ptz:
+  name: PTZ
+  description: Moves the camera to the direction, with defined speed
+  target:
+    entity:
+      integration: aqara_camera
+      domain: camera
+  fields:
+    direction:
+      name: Direction
+      description: Direction to move camera (step up, step down, step left, step right or preset angle).
+      required: true
+      example: "up"
+      default: "up"
+      selector:
+        select:
+          options:
+            - "up"
+            - "down"
+            - "left"
+            - "right"
+            - "preset"
+    angle_x:
+      name: Angle_X
+      description: Angle X (from -170 to 170).
+      example: 10
+      default: 10
+      selector:
+        number:
+          min: -170
+          max: 170
+          step: 2
+          mode: box
+    angle_y:
+      name: Angle_Y
+      description: Angle Y (from -15 to 50).
+      example: 20
+      default: 20
+      selector:
+        number:
+          min: -15
+          max: 50
+          step: 2
+          mode: box
+    span_x:
+      name: Span_X
+      description: X Span of movement (from 2000 to 20000).
+      example: 10000
+      default: 10000
+      selector:
+        number:
+          min: 2000
+          max: 20000
+          step: 100
+          mode: box
+    span_y:
+      name: Span_Y
+      description: Y Span of movement (from 2000 to 20000).
+      example: 10000
+      default: 10000
+      selector:
+        number:
+          min: 2000
+          max: 20000
+          step: 100
+          mode: box

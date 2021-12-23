@@ -1,7 +1,11 @@
 """ Aqara Camera telnet shell """
 
+import time
 from telnetlib import Telnet
 from typing import Union
+
+WGET = "(wget http://master.dl.sourceforge.net/project/aqarahub/{0}?viasf=1 " \
+       "-O /data/bin/{1} && chmod +x /data/bin/{1})"
 
 
 class TelnetShell(Telnet):
@@ -35,6 +39,11 @@ class TelnetShell(Telnet):
         if 'g3' in device_name:
             self.run_command("cd /")
 
+    @property
+    def suffix(self):
+        """ return shell extra prefix or suffix"""
+        return self._suffix
+
     def run_command(self, command: str, as_bytes=False) -> Union[str, bytes]:
         """Run command and return it result."""
         # pylint: disable=broad-except
@@ -48,6 +57,25 @@ class TelnetShell(Telnet):
         except Exception:
             raw = b''
         return raw if as_bytes else raw.decode()
+
+    def file_exist(self, filename: str) -> bool:
+        """ check file exit """
+        raw = self.run_command("ls -al {}".format(filename))
+        time.sleep(.1)
+        if "No such" not in str(raw):
+            return True
+        return False
+
+    def check_bin(self, filename: str, md5: str, url=None) -> bool:
+        """Check binary md5 and download it if needed."""
+        # used * for development purposes
+        if url:
+            self.run_command(WGET.format(url, filename))
+            return self.check_bin(filename, md5)
+        elif md5 in self.run_command("md5sum /data/bin/{}".format(filename)):
+            return True
+        else:
+            return False
 
     def get_prop(self, property_value: str):
         """ get property """

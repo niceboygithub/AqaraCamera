@@ -4,6 +4,8 @@ from __future__ import annotations
 import logging
 
 from homeassistant.components.camera import SUPPORT_STREAM, Camera
+from homeassistant.helpers import entity_platform
+from homeassistant.util import slugify
 from homeassistant.const import CONF_HOST
 
 from .core.aqara_camera import (
@@ -11,7 +13,15 @@ from .core.aqara_camera import (
 )
 from .core.exceptions import CannotConnect
 
-from .core.const import CONF_MODEL, CONF_STREAM
+from .core.const import (
+    CONF_MODEL,
+    CONF_STREAM,
+    DIR_PRESET,
+    DOMAIN,
+    SERVICE_PTZ,
+    SCHEMA_SERVICE_PTZ
+)
+
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -32,6 +42,10 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
 
     async_add_entities([HassAqaraCamera(camera, config_entry)])
 
+    platform = entity_platform.current_platform.get()
+    platform.async_register_entity_service(
+        SERVICE_PTZ, SCHEMA_SERVICE_PTZ, "perform_ptz",
+    )
 
 class HassAqaraCamera(Camera):
     """An implementation of a Aqara Camera."""
@@ -118,6 +132,15 @@ class HassAqaraCamera(Camera):
             return self._session.camera_rtsp_url
 
         return None
+
+    def perform_ptz(
+        self, direction, angle_x=None, angle_y=None, span_x=None, span_y=None
+    ):
+        """Perform a PTZ action on the camera."""
+        if direction.lower() == DIR_PRESET:
+            self._session.ptz_control_preset(angle_x, angle_y, span_x, span_y)
+        else:
+            self._session.ptz_control(direction, span_x, span_y)
 
     @property
     def name(self):

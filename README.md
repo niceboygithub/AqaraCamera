@@ -1,6 +1,6 @@
 # Aqara Camera G3 integration for Home Assistant
 
-**ATTENTION:** The component **only works after enabled telnet.** Only supportd stream. Not support still image, motion detection, ptz, ai etc. yet.
+**ATTENTION:** The component **only works after enabled telnet.** Only supportd stream. Not support still image, motion detection, ai etc. yet.
 
 This is a way to [enable telnetd](https://github.com/Wh1terat/aQRootG3) from #Wh1terat. After enabled telnet, you need use putty to telnet <ip of your G3>. Then enter the following commands.
 
