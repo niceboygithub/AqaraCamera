@@ -19,7 +19,9 @@ from .core.const import (
     DIR_PRESET,
     DOMAIN,
     SERVICE_PTZ,
-    SCHEMA_SERVICE_PTZ
+    SCHEMA_SERVICE_PTZ,
+    AQARA_CAMERA_SUCCESS,
+    ERROR_AQARA_CAMERA_UNAVAILABLE
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -63,20 +65,20 @@ class HassAqaraCamera(Camera):
 
     async def async_added_to_hass(self):
         """Handle entity addition to hass."""
-        # Get motion detection status
+        # Get product info
         ret, response = await self.hass.async_add_executor_job(
             self._session.get_product_info
         )
 
-        if ret == -3:
+        if ret == ERROR_AQARA_CAMERA_UNAVAILABLE:
             _LOGGER.info(
-                "Can't get motion detection status, camera %s configured with non-admin user",
+                "Can't get camera status, camera %s configured with non-admin user",
                 self._name,
             )
 
-        elif ret != 0:
+        elif ret != AQARA_CAMERA_SUCCESS:
             _LOGGER.error(
-                "Error getting motion detection status of %s: %s", self._name, ret
+                "Error getting camera status of %s: %s", self._name, ret
             )
 
         else:
@@ -96,8 +98,14 @@ class HassAqaraCamera(Camera):
         return None
 
     @property
-    def motion_detection_enabled(self):
-        return False
+    def is_recording(self) -> bool:
+        """Return true if the device is recording."""
+        return self._session.is_recording  # type: ignore[no-any-return]
+
+    @property
+    def motion_detection_enabled(self) -> bool:
+        """Return the camera motion detection status."""
+        return not self._session.is_recording
 
     @property
     def brand(self):

@@ -65,6 +65,14 @@ class AqaraCamera():
         """ return rtsp url """
         return self.rtsp_url
 
+    @property
+    def is_recording(self):
+        """ return is_recording """
+        raw = self._shell.get_prop("persist.app.camera_rec_mode")
+        if raw != "0":
+            return True
+        return False
+
     def debug(self, message: str):
         """ deubug function """
         if self._debug:
