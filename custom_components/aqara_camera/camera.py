@@ -2,9 +2,14 @@
 from __future__ import annotations
 
 import logging
+import asyncio
 
+#from haffmpeg.tools import IMAGE_JPEG, ImageFrame
+
+from homeassistant.components import ffmpeg
 from homeassistant.components.camera import SUPPORT_STREAM, Camera
 from homeassistant.helpers import entity_platform
+from homeassistant.components.ffmpeg import DATA_FFMPEG
 from homeassistant.util import slugify
 from homeassistant.const import CONF_HOST
 
@@ -42,7 +47,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
 
     await hass.async_add_executor_job(camera.get_device_info)
 
-    async_add_entities([HassAqaraCamera(camera, config_entry)])
+    async_add_entities([HassAqaraCamera(hass, camera, config_entry)])
 
     platform = entity_platform.current_platform.get()
     platform.async_register_entity_service(
@@ -52,7 +57,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
 class HassAqaraCamera(Camera):
     """An implementation of a Aqara Camera."""
 
-    def __init__(self, camera, config_entry):
+    def __init__(self, hass, camera, config_entry):
         """Initialize a Aqara camera."""
         super().__init__()
 
@@ -62,6 +67,7 @@ class HassAqaraCamera(Camera):
         self._stream = config_entry.data[CONF_STREAM]
         self._unique_id = config_entry.entry_id
         self._motion_status = 0
+        self._ffmpeg = hass.data.get(DATA_FFMPEG, None)
 
     async def async_added_to_hass(self):
         """Handle entity addition to hass."""
@@ -127,10 +133,16 @@ class HassAqaraCamera(Camera):
             "sw_version": self._session.fw_version,
         }
 
-    def camera_image(
+    async def async_camera_image(
         self, width: int | None = None, height: int | None = None
     ) -> bytes | None:
-        """Return a still image response from the camera."""
+        if self._ffmpeg:
+            return await ffmpeg.async_get_image(
+                self.hass,
+                self._session.camera_rtsp_url,
+                width=width,
+                height=height,
+            )
         return None
 
     async def stream_source(self):
