@@ -24,7 +24,7 @@ from .const import (
     ERROR_AQARA_CAMERA_AUTH,
     AQARA_CAMERA_SUCCESS
 )
-MD5_MI_MOTOR_ARMV7L = "b363f3ad671f7d854ef168e680eb8d3e"
+MD5_MI_MOTOR_ARMV7L = "191a742a619ecaf1120378ce3729c77d"
 
 _LOGGER = logging.getLogger(__name__)
 

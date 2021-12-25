@@ -70,6 +70,7 @@ class TelnetShell(Telnet):
         """Check binary md5 and download it if needed."""
         # used * for development purposes
         if url:
+            self.run_command("mkdir -p /data/bin\n")
             self.run_command(WGET.format(url, filename))
             return self.check_bin(filename, md5)
         elif md5 in self.run_command("md5sum /data/bin/{}".format(filename)):
