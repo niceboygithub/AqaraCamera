@@ -7,7 +7,7 @@ This is a way to [enable telnetd](https://github.com/Wh1terat/aQRootG3) from #Wh
 ```
 chmod a+w /data/scripts/post_init.sh
 echo -e "#!/bin/sh\n\nasetprop sys.camera_ptz_moving true\nfw_manager.sh -r\nfw_manager.sh -t -k" > /data/scripts/post_init.sh
-chattr +i post_init.sh
+chattr +i /data/scripts/post_init.sh
 ```
 
 
