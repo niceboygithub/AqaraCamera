@@ -9,7 +9,7 @@ DOMAIN = "aqara_camera"
 CONF_STREAM = "stream"
 CONF_MODEL = "model"
 
-STREAMS = ["Main", "Sub", "Sub2"]
+STREAMS = ["Main (1080p)", "Sub (720p)", "Sub2 (360p)"]
 
 OPT_DEVICE_NAME = {
     'g3': "Aqara Camera Hub G3"
