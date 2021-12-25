@@ -3,6 +3,7 @@
     "name": "Aqara Camera",
     "config_flow": true,
     "documentation": "https://github.com/niceboygithub/AqaraCamera",
+    "issue_tracker": "https://github.com/niceboygithub/AqaraCamera/issues",
     "requirements": ["ffmpeg"],
     "codeowners": ["@niceboygithub"],
     "version": "0.1.0",
