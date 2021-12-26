@@ -41,7 +41,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
         config_entry.data[CONF_STREAM],
         verbose=False,
     )
-    ret = await hass.async_add_executor_job(camera.login)
+    ret = await hass.async_add_executor_job(camera.connect)
     if not ret:
         raise CannotConnect
 

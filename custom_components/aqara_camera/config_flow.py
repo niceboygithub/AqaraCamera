@@ -56,7 +56,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             data[CONF_STREAM],
             verbose=False,
         )
-        ret = await self.hass.async_add_executor_job(camera.login)
+        ret = await self.hass.async_add_executor_job(camera.connect)
         if not ret:
             raise CannotConnect
 

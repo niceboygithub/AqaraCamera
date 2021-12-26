@@ -8,7 +8,7 @@ from homeassistant.const import (
     CONF_NAME
 )
 
-from .shell import TelnetShell
+from .shell import TelnetShell, TelnetShellG3
 
 from .const import (
     ATTR_ANGLE_X,
@@ -78,19 +78,25 @@ class AqaraCamera():
         if self._debug:
             _LOGGER.debug(f"{self._host}: {message}")
 
-    def login(self):
+    def connect(self):
         """ login """
         try:
-            shell = TelnetShell(self._host, None, self._device_name)
+            if any(name in self._device_name for name in ['g3']):
+                shell = TelnetShellG3(self._host)
+            else:
+                shell = TelnetShell(self._host)
 
-        except (ConnectionRefusedError, socket.timeout):
+            if shell.login():
+                self._shell = shell
+
+        except (ConnectionRefusedError, socket.timeout) as err:
+            self.debug(f"Can't prepare camera: {err}")
             return False
 
         except Exception as err:
             self.debug(f"Can't prepare camera: {err}")
             return False
-        self._shell = shell
-        return True
+        return (self._shell != None)
 
     def run_command(self, command: str):
         """ run command """

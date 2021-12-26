@@ -12,32 +12,27 @@ class TelnetShell(Telnet):
     """ Telnet Shell """
     _aqara_property = False
 
-    def __init__(self, host: str, password=None, device_name=None):
+    def __init__(self, host: str, password=None):
         """ init """
         super().__init__(host, timeout=3)
+        self._host = host
+        self._password = password
+        self._suffix = "# "
 
+    def login(self):
+        """ login function """
+        self.write(b"\n")
         login_name = 'admin'
-        if (device_name and any(
-                name in device_name for name in ['g3'])):
-            self._aqara_property = True
-            login_name = 'root'
         self.read_until(b"login: ", timeout=3)
-        if (device_name and any(
-                name in device_name for name in ['g3'])):
-            self._suffix = "/ # "
-            if any(name in device_name for name in ['g3']):
-                password = '\n'
-        if password:
-            command = "{}\n".format(login_name)
-            self.write(command.encode())
-            self.read_until(b"Password: ", timeout=3)
-            self.run_command(password)
-        else:
-            self.run_command(login_name)
+        self.write(login_name.encode() + b"\n")
 
-        self.run_command("stty -echo")
-        if 'g3' in device_name:
-            self.run_command("cd /")
+        if self._password:
+            self.read_until(b"Password: ", timeout=3)
+            self.run_command(self._password)
+
+        command = "stty -echo"
+        self.write(command.encode() + b"\n")
+        return True
 
     @property
     def suffix(self):
@@ -108,3 +103,34 @@ class TelnetShell(Telnet):
     def get_version(self):
         """ get camera version """
         return self.get_prop("ro.sys.fw_ver")
+
+
+class TelnetShellG3(TelnetShell):
+    """ Telnet Shell """
+
+    def __init__(self, host: str, password=None):
+        """ init """
+        super().__init__(host, password)
+        self._suffix = "/ # "
+        self._aqara_property = True
+
+    def login(self):
+        """ login function """
+        self.write(b"\n")
+        self.read_until(b"login: ", timeout=1)
+
+        password = self._password
+        if self._password is None:
+            password = '\n'
+
+        command = "root"
+        self.write(command.encode() + b"\n")
+        if password:
+            self.read_until(b"Password: ", timeout=1)
+            self.write(password.encode() + b"\n")
+
+        command = "stty -echo"
+        self.write(command.encode() + b"\n")
+        command = "cd /"
+        self.write(command.encode() + b"\n")
+        return True
