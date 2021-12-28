@@ -18,7 +18,7 @@ from .core.aqara_camera import (
 )
 from .core.exceptions import CannotConnect, InvalidAuth, InvalidResponse
 
-from .core.const import (
+from .const import (
     CONF_MODEL,
     CONF_STREAM,
     DOMAIN,

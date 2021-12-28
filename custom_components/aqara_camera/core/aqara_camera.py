@@ -4,17 +4,18 @@ import json
 import logging
 
 from homeassistant.const import (
-    CONF_HOST,
     CONF_NAME
 )
 
 from .shell import TelnetShell, TelnetShellG3
 
 from .const import (
-    ATTR_ANGLE_X,
-    ATTR_ANGLE_Y,
-    ATTR_SPAN_X,
-    ATTR_SPAN_Y,
+    STREAM_SUB,
+    STREAM_SUB2,
+    ANGLE_X,
+    ANGLE_Y,
+    SPAN_X,
+    SPAN_Y,
     CONF_MODEL,
     DIR_UP,
     DIR_DOWN,
@@ -22,7 +23,9 @@ from .const import (
     DIR_RIGHT,
     ERROR_AQARA_CAMERA_UNAVAILABLE,
     ERROR_AQARA_CAMERA_AUTH,
-    AQARA_CAMERA_SUCCESS
+    AQARA_CAMERA_SUCCESS,
+    PERSIST_REC_MODE,
+    SYS_PTZ_MOVING
 )
 MD5_MI_MOTOR_ARMV7L = "191a742a619ecaf1120378ce3729c77d"
 
@@ -68,7 +71,7 @@ class AqaraCamera():
     @property
     def is_recording(self):
         """ return is_recording """
-        raw = self._shell.get_prop("persist.app.camera_rec_mode")
+        raw = self._shell.get_prop(PERSIST_REC_MODE)
         if raw != "0":
             return True
         return False
@@ -109,7 +112,7 @@ class AqaraCamera():
         return ret
 
     def get_product_info(self):
-        """ get product info"""
+        """ get product info """
         try:
             if self._shell.file_exist("/data/bin/mi_motor"):
                 self._mi_motor = True
@@ -119,9 +122,9 @@ class AqaraCamera():
             return ERROR_AQARA_CAMERA_UNAVAILABLE, err
 
         if len(camera_rtsp_url) >= 1:
-            if self._stream == "sub2":
+            if self._stream == STREAM_SUB2:
                 self.rtsp_url = camera_rtsp_url["360p"]
-            elif self._stream == "sub":
+            elif self._stream == STREAM_SUB:
                 self.rtsp_url = camera_rtsp_url["720p"]
             else:
                 self.rtsp_url = camera_rtsp_url["1080p"]
@@ -157,8 +160,8 @@ class AqaraCamera():
             ret = self.run_command(command)
             motor_info = json.loads(ret)
 
-            current_angle_x = motor_info[ATTR_ANGLE_X]
-            current_angle_y = motor_info[ATTR_ANGLE_Y]
+            current_angle_x = motor_info[ANGLE_X]
+            current_angle_y = motor_info[ANGLE_Y]
             if direction.lower() == DIR_UP:
                 current_angle_y += 3
             if direction.lower() == DIR_DOWN:
@@ -167,14 +170,14 @@ class AqaraCamera():
                 current_angle_x += 3
             if direction.lower() == DIR_RIGHT:
                 current_angle_x -= 3
-            self._shell.set_prop("sys.sys.camera_ptz_moving", "true")
+            self._shell.set_prop(SYS_PTZ_MOVING, "true")
             command = "/data/bin/mi_motor -x {} -y {} -a {} -b {}\n".format(
                 current_angle_x, current_angle_y, span_x, span_y
             )
             ret = self.run_command(command)
         except Exception as err:
             self.debug(f"ptz_control got error: {err}")
-        self._shell.set_prop("sys.sys.camera_ptz_moving", "false")
+        self._shell.set_prop(SYS_PTZ_MOVING, "false")
 
     def ptz_control_preset(self, angle_x, angle_y, span_x, span_y):
         """ ptz control preset """
@@ -188,10 +191,10 @@ class AqaraCamera():
             command = "/data/bin/mi_motor -g\n"
             ret = self.run_command(command)
             motor_info = json.loads(ret)
-            current_angle_x = motor_info[ATTR_ANGLE_X]
-            current_angle_y = motor_info[ATTR_ANGLE_Y]
-            current_span_x = motor_info[ATTR_SPAN_X]
-            current_span_y = motor_info[ATTR_SPAN_Y]
+            current_angle_x = motor_info[ANGLE_X]
+            current_angle_y = motor_info[ANGLE_Y]
+            current_span_x = motor_info[SPAN_X]
+            current_span_y = motor_info[SPAN_Y]
             if angle_x is None:
                 angle_x = current_angle_x
             if angle_y is None:
@@ -200,11 +203,11 @@ class AqaraCamera():
                 span_x = current_span_x
             if span_y is None:
                 span_y = current_span_y
-            self._shell.set_prop("sys.sys.camera_ptz_moving", "true")
+            self._shell.set_prop(SYS_PTZ_MOVING, "true")
             command = "/data/bin/mi_motor -x {} -y {} -a {} -b {}\n".format(
                 angle_x, angle_y, span_x, span_y
             )
             ret = self.run_command(command)
         except Exception as err:
             self.debug(f"ptz_control_preset got error: {err}")
-        self._shell.set_prop("sys.sys.camera_ptz_moving", "false")
+        self._shell.set_prop(SYS_PTZ_MOVING, "false")

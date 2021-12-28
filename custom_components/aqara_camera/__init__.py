@@ -16,7 +16,7 @@ from homeassistant.const import (
 )
 from homeassistant.core import HomeAssistant, callback
 
-from .core.const import DOMAIN, CONF_MODEL, CONF_STREAM, PLATFORMS
+from .const import DOMAIN, CONF_MODEL, CONF_STREAM, PLATFORMS
 
 _LOGGER = logging.getLogger(__name__)
 
