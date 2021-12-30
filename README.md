@@ -33,7 +33,33 @@ Or Download and copy `custom_components/aqara_camera` folder to `custom_componen
 
 Need to add the following information to your configuration.yaml file:
 
+```
 ffmpeg:
+```
+## WebRTC
+
+You can use [@AlexxIT's WebRTC](https://github.com/AlexxIT/WebRTC) integration. The usage was well documented in AlexxIT's github.
+The rtsp url can be found in Attributes of Camera (find it in developer-tools/state).
+You need to notice that the url was changed on every reboot of Aqara Camera.
+
+```
+type: custom:webrtc-camera
+url: rtsp://66:88@192.168.1.168:8554/720p
+ptz:
+  service: aqara_camera.ptz
+  data_left:
+    entity_id: camera.camera_hub_g3_1234
+    direction: left
+  data_right:
+    entity_id: camera.camera_hub_g3_1234
+    direction: right
+  data_up:
+    entity_id: camera.camera_hub_g3_1234
+    direction: up
+  data_down:
+    entity_id: camera.camera_hub_g3_1234
+    direction: down
+```
 
 Supported Versions
 ---------------

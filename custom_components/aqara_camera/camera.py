@@ -4,8 +4,6 @@ from __future__ import annotations
 import logging
 import asyncio
 
-#from haffmpeg.tools import IMAGE_JPEG, ImageFrame
-
 from homeassistant.components import ffmpeg
 from homeassistant.components.camera import SUPPORT_STREAM, Camera
 from homeassistant.helpers import entity_platform
@@ -91,6 +89,10 @@ class HassAqaraCamera(Camera):
 
         else:
             self._motion_status = response == 1
+        self._attr_brand = self._session.brand
+        self._attr_model = self._session.model
+        self._attr_is_recording = self._session.is_recording
+        self._attr_motion_detection_enabled = not self._session.is_recording
 
     @property
     def unique_id(self):
@@ -106,24 +108,6 @@ class HassAqaraCamera(Camera):
         return None
 
     @property
-    def is_recording(self) -> bool:
-        """Return true if the device is recording."""
-        return self._session.is_recording  # type: ignore[no-any-return]
-
-    @property
-    def motion_detection_enabled(self) -> bool:
-        """Return the camera motion detection status."""
-        return not self._session.is_recording
-
-    @property
-    def brand(self):
-        return self._session.brand
-
-    @property
-    def model(self):
-        return self._session.model
-
-    @property
     def device_info(self):
         return {
             "identifiers": {
@@ -135,10 +119,22 @@ class HassAqaraCamera(Camera):
             "sw_version": self._session.fw_version,
         }
 
+    @property
+    def extra_state_attributes(self):
+        """Return the camera attributes."""
+        return {"rtsp_url": self._session.camera_rtsp_url}
+
+    @property
+    def name(self):
+        """Return the name of this camera."""
+        return self._name
+
     async def async_camera_image(
         self, width: int | None = None, height: int | None = None
     ) -> bytes | None:
+        """Return bytes of camera image."""
         if self._ffmpeg:
+            self._session.get_product_info()
             return await ffmpeg.async_get_image(
                 self.hass,
                 self._session.camera_rtsp_url,
@@ -150,6 +146,7 @@ class HassAqaraCamera(Camera):
     async def stream_source(self):
         """Return the stream source."""
         self._session.get_product_info()
+        self._attr_is_recording = self._session.is_recording
         if len(self._session.camera_rtsp_url) >= 1:
             return self._session.camera_rtsp_url
 
@@ -163,8 +160,3 @@ class HassAqaraCamera(Camera):
             self._session.ptz_control_preset(angle_x, angle_y, span_x, span_y)
         else:
             self._session.ptz_control(direction, span_x, span_y)
-
-    @property
-    def name(self):
-        """Return the name of this camera."""
-        return self._name
