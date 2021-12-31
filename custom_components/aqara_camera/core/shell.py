@@ -61,6 +61,21 @@ class TelnetShell(Telnet):
             return True
         return False
 
+    def run_public_mosquitto(self):
+        """ run mosquitto as public """
+        if self.file_exist("/data/bin/mosquitto"):
+            self.run_command("killall mosquitto")
+            time.sleep(.5)
+            self.run_command("/data/bin/mosquitto -d")
+            time.sleep(.5)
+
+    def check_public_mosquitto(self) -> bool:
+        """ get processes list """
+        raw = self.run_command("mosquitto")
+        if "Binding listener to interface" in raw:
+            return False
+        return True
+
     def get_running_ps(self) -> str:
         """ get processes list """
         return self.run_command("ps")

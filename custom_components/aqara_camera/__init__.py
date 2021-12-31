@@ -10,15 +10,22 @@ from .core.aqara_camera import (
 from .core.exceptions import CannotConnect, InvalidAuth, InvalidResponse
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_HOST
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import HomeAssistant, callback, Event
+from homeassistant.helpers.entity import Entity, DeviceInfo
+from homeassistant.util import slugify
+from homeassistant.const import (
+    CONF_HOST,
+    CONF_NAME,
+    EVENT_HOMEASSISTANT_STOP
+)
 
 from .const import (
     DOMAIN,
     CONF_MODEL,
     CONF_STREAM,
     CONF_RTSP_AUTH,
-    PLATFORMS
+    PLATFORMS,
+    AqaraSensorEntityDescription
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -67,6 +74,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     }
 
     hass.data[DOMAIN][entry.entry_id] = data
+
+    await camera.async_connect()
+
+    async def async_stop_mqtt(_event: Event):
+        """Stop MQTT component."""
+        await camera.async_disconnect()
+
+    hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, async_stop_mqtt)
+
     return True
 
 
@@ -78,3 +94,39 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     return unload_ok
 
+
+class CameraBaseSensor(Entity):
+    """Representation of a Aqara Sensor entry."""
+    entity_description: AqaraSensorEntityDescription
+    unique_id: str
+
+    def __init__(
+        self,
+        camera: AqaraCamera,
+        device: dict,
+        description: AqaraSensorEntityDescription,
+    ) -> None:
+        """Initialize the Aqara Base Sensor entity."""
+        super().__init__()
+        self.entity_description = description
+
+        self._camera = camera
+        self._device = device
+        self._unique_id = device["entry_id"]
+        self._attr_name = f"{device[CONF_NAME]} {description.name}"
+        self._attr_unique_id: str = (
+            f"{device[CONF_NAME]}_{description.key}"
+        )
+        self._attr_extra_state_attributes = {}
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Return the device information."""
+        return DeviceInfo(
+            identifiers={(DOMAIN, slugify(
+                f"{self._device[CONF_NAME]}_{self._unique_id}"))},
+            name=self._device[CONF_NAME],
+            manufacturer=self._camera.brand,
+            model=self._camera.model,
+            sw_version=self._camera.fw_version
+        )

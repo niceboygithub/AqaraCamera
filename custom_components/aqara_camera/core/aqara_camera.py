@@ -3,6 +3,8 @@ import socket
 import time
 import json
 import re
+
+from paho.mqtt.client import Client, MQTTMessage
 import logging
 
 from homeassistant.const import (
@@ -29,6 +31,7 @@ from .const import (
     AQARA_CAMERA_SUCCESS,
     PERSIST_REC_MODE,
     SYS_PTZ_MOVING,
+    MD5_MOSQUITTO_ARMV7L,
     MD5_MI_MOTOR_ARMV7L
 )
 
@@ -49,7 +52,13 @@ class AqaraCamera():
         self._rtsp_auth = True  # for fast access
         self._properties: dict = {}
 
+        self._mqttc = Client()
+        self._mqttc.on_connect = self.on_connect
+        self._mqttc.on_disconnect = self.on_disconnect
+        self._mqttc.on_message = self.on_message
+
         self.hass = hass
+        self.updates = {}
         self.rtsp_url = ""
 
     @property
@@ -96,6 +105,33 @@ class AqaraCamera():
         if self._debug:
             _LOGGER.debug(f"{self._host}: {message}")
 
+    def prepare_camera(self, model):
+        """ Prepare supported Aqara Camera """
+        command = "chattr -i /data/scripts"
+        self._shell.run_command(command)
+        command = "mkdir -p /data/scripts"
+        self._shell.write(command.encode() + b"\n")
+        time.sleep(1)
+        command = "echo -e '#!/bin/sh\r\n\r\n# AqaraCamera Patched V1" \
+                "\r\nfw_manager.sh -r\r\nfw_manager.sh -t -k\r\n" \
+                "[ -f \"/data/bin/bmlog.sh\" ] && /data/bin/bmlog.sh & || echo \"no bmlog\"" \
+                "' > /data/scripts/post_init.sh"
+        self._shell.run_command(command)
+        command = "chmod a+x /data/scripts/post_init.sh"
+        self._shell.run_command(command)
+        command = "mkdir -p /data/bin"
+        self._shell.write(command.encode() + b"\n")
+        time.sleep(1)
+        self._shell.check_bin('mosquitto', MD5_MOSQUITTO_ARMV7L , 'bin/armv7l/mosquitto')
+        command = "echo -e '#!/bin/sh\r\n\r\ntail -f \"/tmp/bmlog.txt\" | \\" \
+                "\r\nwhile read -r line; do\r\n" \
+                "\tif echo $line | grep -E \"camera|event\"; then\r\n" \
+                "\t\tset -x\r\n\t\t/data/bin/mosquitto_pub -t log/camera -m \"$line\"" \
+                "\r\n\t\tset +x\r\n\tfi\r\ndone\r\n" \
+                "' > /data/bin/bmlog.sh"
+        self._shell.run_command(command)
+        self._shell.set_prop("persist.app.debug_log", "true")
+
     def connect(self):
         """ login """
         try:
@@ -110,6 +146,15 @@ class AqaraCamera():
             if self._shell.file_exist("/data/bin/mi_motor"):
                  self._mi_motor = True
 
+            processes = shell.get_running_ps()
+            public_mosquitto = shell.check_public_mosquitto()
+            if not public_mosquitto:
+                self.debug("mosquitto is not running as public!")
+
+            if "/data/bin/mosquitto -d" not in processes:
+                if "mosquitto" not in processes or not public_mosquitto:
+                    shell.run_public_mosquitto()
+
         except (ConnectionRefusedError, socket.timeout) as err:
             self.debug(f"Can't prepare camera: {err}")
             return False
@@ -118,6 +163,73 @@ class AqaraCamera():
             self.debug(f"Can't prepare camera: {err}")
             return False
         return (self._shell != None)
+
+    async def async_connect(self) -> str:
+        """Connect to the host. Does not process messages yet."""
+        result: int = None
+        try:
+            result = await self.hass.async_add_executor_job(
+                self._mqttc.connect,
+                self._host
+            )
+        except OSError as err:
+            _LOGGER.error(
+                f"Failed to connect to MQTT server {self._host} due to exception: {err}")
+
+        if result is not None and result != 0:
+            _LOGGER.error(
+                f"Failed to connect to MQTT server: {self._host}"
+            )
+
+        self._mqttc.loop_start()
+
+    async def async_disconnect(self):
+        """Stop the MQTT client."""
+
+        def stop():
+            """Stop the MQTT client."""
+            # Do not disconnect, we want the broker to always publish will
+            self._mqttc.loop_stop()
+
+        await self.hass.async_add_executor_job(stop)
+
+    def on_connect(self, client, userdata, flags, ret):
+        # pylint: disable=unused-argument
+        """ on connect to mqtt server """
+        self._mqttc.subscribe("log/camera")
+
+    def on_disconnect(self, client, userdata, ret):
+        # pylint: disable=unused-argument
+        """ on disconnect to mqtt server """
+        self._mqttc.disconnect()
+
+    def on_message(self, client: Client, userdata, msg: MQTTMessage):
+        # pylint: disable=unused-argument
+        """ on getting messages from mqtt server """
+
+        topic = msg.topic
+        if topic == 'broker/ping':
+            return
+
+        try:
+            if topic == 'log/camera':
+                RE_JSON = re.compile(b'{.+}')
+                m = RE_JSON.search(msg.payload)
+                raw = m[0]
+                data = json.loads(raw)
+        except:
+            _LOGGER.exception(f"Processing MQTT: {msg.topic} {msg.payload}")
+        key = None
+        payload = None
+        if "cmd" in data:
+            key = "avdt_{}".format(data["data"]["action"])
+            payload = data["data"]
+        elif "method" in data and "camera_ai_report" in data["params"]["name"]:
+            key = data["params"]["value"]["res"]
+            payload = data["params"]["value"]["payload"]
+
+        if key and key in self.updates:
+            self.updates[key](payload)
 
     def run_command(self, command: str):
         """ run command """

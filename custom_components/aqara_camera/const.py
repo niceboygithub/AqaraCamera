@@ -1,8 +1,18 @@
 """Constants for Aqara Camera component."""
 import voluptuous as vol
+from dataclasses import dataclass
 
 from homeassistant.helpers import config_validation as cv
-from homeassistant.const import Platform
+from homeassistant.components.binary_sensor import (
+    DEVICE_CLASS_RUNNING,
+    BinarySensorEntityDescription,
+)
+from homeassistant.components.sensor import (
+    STATE_CLASS_MEASUREMENT,
+    SensorEntityDescription,
+)
+from homeassistant.const import Platform, ENTITY_CATEGORY_DIAGNOSTIC
+from homeassistant.helpers.entity import EntityDescription
 
 from .core.const import (
     STREAM_MAIN,
@@ -23,7 +33,7 @@ OPT_DEVICE_NAME = {
     'g3': "Aqara Camera Hub G3"
 }
 
-PLATFORMS = [Platform.CAMERA]
+PLATFORMS = [Platform.CAMERA, Platform.BINARY_SENSOR, Platform.SENSOR]
 
 # Services data
 DIR_UP = "up"
@@ -56,3 +66,76 @@ SCHEMA_SERVICE_PTZ = {
         vol.Optional(ATTR_SPAN_Y): cv.positive_int
 }
 
+
+@dataclass
+class AqaraPropteries:
+    """ Aqara properties"""
+    property: str
+
+@dataclass
+class AqaraEntityDescription(EntityDescription, AqaraPropteries):
+    """Generic Aqara entity description."""
+
+@dataclass
+class AqaraSensorEntityDescription(
+    SensorEntityDescription, AqaraEntityDescription
+):
+    """Describes Aqara sensor entity."""
+
+@dataclass
+class AqaraBinarySensorEntityDescription(
+    BinarySensorEntityDescription, AqaraEntityDescription
+):
+    """Describes Aqara sensor entity."""
+
+# Binary sensors
+CAMERA_BINARY_SENSORS: tuple[AqaraBinarySensorEntityDescription, ...] = (
+    AqaraBinarySensorEntityDescription(
+        property="camera_avdt_motion_active",
+        key="avdt_motion",
+        name="Motion",
+        device_class=DEVICE_CLASS_RUNNING,
+    ),
+    AqaraBinarySensorEntityDescription(
+        property="camera_avdt_voice_active",
+        key="avdt_voice",
+        name="Voice",
+        device_class=DEVICE_CLASS_RUNNING,
+    ),
+)
+
+# Sensors
+CAMERA_EVENT_SENSORS: tuple[AqaraSensorEntityDescription, ...] = (
+    AqaraSensorEntityDescription(
+        property="camera_ai_pet_active",
+        key="ai_pet",
+        name="AI Pet",
+        entity_category=ENTITY_CATEGORY_DIAGNOSTIC,
+        state_class=STATE_CLASS_MEASUREMENT,
+    ),
+    AqaraSensorEntityDescription(
+        property="camera_ai_face_active",
+        key="ai_face",
+        name="Ai Face",
+        entity_category=ENTITY_CATEGORY_DIAGNOSTIC,
+        state_class=STATE_CLASS_MEASUREMENT,
+    ),
+    AqaraSensorEntityDescription(
+        property="camera_ai_gesture_active",
+        key="ai_gesture",
+        name="AI Gesture",
+        entity_category=ENTITY_CATEGORY_DIAGNOSTIC,
+        state_class=STATE_CLASS_MEASUREMENT,
+    ),
+    AqaraSensorEntityDescription(
+        property="camera_ai_figure_active",
+        key="ai_figure",
+        name="AI Figure",
+        entity_category=ENTITY_CATEGORY_DIAGNOSTIC,
+        state_class=STATE_CLASS_MEASUREMENT,
+    ),
+)
+
+RES_MAPPING = {
+    "ai_pet": "13.98.85"
+}
