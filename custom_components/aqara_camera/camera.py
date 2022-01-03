@@ -14,7 +14,7 @@ from homeassistant.const import CONF_HOST
 from .core.aqara_camera import (
     AqaraCamera
 )
-from .core.exceptions import CannotConnect
+
 from .core.const import (
     AQARA_CAMERA_SUCCESS,
     ERROR_AQARA_CAMERA_UNAVAILABLE

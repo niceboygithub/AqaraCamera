@@ -1,6 +1,7 @@
 """Class for Aqara Camera component."""
 import socket
 import json
+import re
 import logging
 
 from homeassistant.const import (
@@ -42,26 +43,35 @@ class AqaraCamera():
         self._device_name = model
         self._stream = stream
         self._debug = verbose
-        self._brand = ""
-        self._fw_version = ""
-        self._model = ""
         self._mi_motor = False
         self.rtsp_url = ""
+        self._properties: dict = {}
 
     @property
     def brand(self):
-        """ return rtsp url """
-        return self._brand
+        """ return brand """
+        return self._properties["ro.sys.manufacturer"]
 
     @property
     def model(self):
-        """ return rtsp url """
-        return self._model
+        """ return model """
+        return self._properties["ro.sys.product"]
 
     @property
     def fw_version(self):
-        """ return rtsp url """
-        return self._fw_version
+        """ return firmware version """
+        return self._properties["ro.sys.fw_ver"]
+
+    @property
+    def properties(self):
+        """ return camera properties """
+        properties = {}
+        for key, value in self._properties.items():
+            if "camera_ai" in key:
+                properties[key.replace(
+                    "persist.app.camera_", "").replace(
+                        "sys.camera_", "")] = value
+        return properties
 
     @property
     def camera_rtsp_url(self):
@@ -134,16 +144,28 @@ class AqaraCamera():
     def get_device_info(self):
         """ get device info """
         result = {}
+        raw = self._shell.get_prop("")
 
-        model = self._shell.get_prop("persist.sys.model")
-        name = self._shell.get_prop("ro.sys.name")
-        mac = self._shell.get_prop("persist.sys.miio_mac")
+        pattern = r'(\[[^[]+\])'
+        matches = re.findall(pattern, raw)
+        self._properties = {}
+        it_matches = iter(matches)
+        while True:
+            try:
+                x = next(it_matches)
+                y = next(it_matches)
+                if not y.strip("[").rstrip("]").endswith("..."):
+                    self._properties[x.strip("[").rstrip("]")] = y.strip("[").rstrip("]")
+            except StopIteration:
+                break
+
+        model = self._properties["persist.sys.model"]
+        mac = self._properties["persist.sys.miio_mac"]
+        name = self._properties["ro.sys.name"]
         result[CONF_NAME] = "{}-{}".format(
             name, mac[-5:].upper().replace(":", ""))
         result[CONF_MODEL] = model
-        self._fw_version = self._shell.get_prop("ro.sys.fw_ver")
-        self._brand = self._shell.get_prop("ro.sys.manufacturer")
-        self._model = self._shell.get_prop("ro.sys.product")
+
         return result
 
     def prepare(self):

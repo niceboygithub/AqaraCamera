@@ -32,6 +32,7 @@ class TelnetShell(Telnet):
 
         command = "stty -echo"
         self.write(command.encode() + b"\n")
+        self.read_until(b"stty -echo\n", timeout=10)
         return True
 
     @property
