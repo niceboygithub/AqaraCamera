@@ -172,6 +172,20 @@ class AqaraCamera():
         """ prepare camera """
         self._shell.check_bin('mi_motor', MD5_MI_MOTOR_ARMV7L , 'bin/armv7l/mi_motor')
 
+        POST_INIT_SH = "/data/scripts/post_init.sh"
+        if not self._shell.file_exist(POST_INIT_SH):
+            command = "mkdir -p /data/scripts"
+            self._shell.write(command.encode() + b"\n")
+            time.sleep(1)
+            command = "echo -e '#!/bin/sh\r\n\r\nfw_manager.sh -r\r\n" \
+                "asetprop sys.camera_ptz_moving true\r\n" \
+                "fw_manager.sh -t -k' > {}".format(POST_INIT_SH)
+            self._shell.run_command(command)
+            command = "chmod a+x {}".format(POST_INIT_SH)
+            self._shell.run_command(command)
+            command = "chattr +i {}".format(POST_INIT_SH)
+            self._shell.run_command(command)
+
     def ptz_control(self, direction, span_x, span_y):
         """ ptz control """
         if not self._mi_motor:

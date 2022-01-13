@@ -2,13 +2,9 @@
 
 **ATTENTION:** The component **only works after enabled telnet.** Only supportd stream. Not support motion detection, ai etc. yet.
 
-This is a way to [enable telnetd](https://github.com/Wh1terat/aQRootG3) from #Wh1terat. After enabled telnet, you need use putty to telnet <ip of your G3>. Then enter the following commands.
+This is a way to [enable telnet](https://github.com/Wh1terat/aQRootG3) from #Wh1terat. Thankes for Wh1terat for the amazing aQRootG3 v0.2.0.
 
-```
-chmod a+xw /data/scripts/post_init.sh
-echo -e "#!/bin/sh\n\nasetprop sys.camera_ptz_moving true\nfw_manager.sh -r\nfw_manager.sh -t -k" > /data/scripts/post_init.sh
-chattr +i /data/scripts/post_init.sh
-```
+After enabled telnet, you need to finish the configuration before reboot G3.
 
 
 ## Installation
