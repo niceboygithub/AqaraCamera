@@ -21,6 +21,7 @@ from .core.exceptions import CannotConnect, InvalidAuth, InvalidResponse
 from .const import (
     CONF_MODEL,
     CONF_STREAM,
+    CONF_RTSP_AUTH,
     DOMAIN,
     OPT_DEVICE_NAME,
     STREAMS
@@ -32,6 +33,7 @@ DATA_SCHEMA = vol.Schema(
         vol.Required(CONF_HOST): str,
         vol.Required(CONF_MODEL, default="g3"): vol.In(OPT_DEVICE_NAME),
         vol.Required(CONF_STREAM, default=STREAMS[0]): vol.In(STREAMS),
+        vol.Optional(CONF_RTSP_AUTH, default=True): bool,
     }
 )
 _LOGGER = logging.getLogger(__name__)
@@ -51,6 +53,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         )
 
         camera = AqaraCamera(
+            self.hass,
             data[CONF_HOST],
             data[CONF_MODEL],
             data[CONF_STREAM],
@@ -59,6 +62,9 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         ret = await self.hass.async_add_executor_job(camera.connect)
         if not ret:
             raise CannotConnect
+
+        config = {CONF_RTSP_AUTH: data.get(CONF_RTSP_AUTH, True)}
+        await self.hass.async_add_executor_job(camera.prepare, config)
 
         # Validate data by sending a request to the camera
         ret, _ = await self.hass.async_add_executor_job(camera.get_product_info)
@@ -83,8 +89,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         dev_name = f"{ret[CONF_NAME]}"
 
         name = data.pop(CONF_NAME, dev_name)
-
-        await self.hass.async_add_executor_job(camera.prepare)
 
         return self.async_create_entry(title=name, data=data)
 

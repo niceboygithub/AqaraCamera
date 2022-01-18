@@ -10,13 +10,16 @@ from .core.aqara_camera import (
 from .core.exceptions import CannotConnect, InvalidAuth, InvalidResponse
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import (
-    CONF_HOST,
-    CONF_NAME,
-)
+from homeassistant.const import CONF_HOST
 from homeassistant.core import HomeAssistant, callback
 
-from .const import DOMAIN, CONF_MODEL, CONF_STREAM, PLATFORMS
+from .const import (
+    DOMAIN,
+    CONF_MODEL,
+    CONF_STREAM,
+    CONF_RTSP_AUTH,
+    PLATFORMS
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -25,20 +28,21 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up foscam from a config entry."""
     hass.config_entries.async_setup_platforms(entry, PLATFORMS)
 
-    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = entry.data
+    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = {"config": entry.data}
 
     camera = AqaraCamera(
+        hass,
         entry.data[CONF_HOST],
         entry.data[CONF_MODEL],
         entry.data[CONF_STREAM],
         verbose=False,
     )
-    ret = await hass.async_add_executor_job(camera.connect)
+    ret = camera.connect()
     if not ret:
         raise CannotConnect
 
     # Validate data by sending a request to the camera
-    ret, _ = await hass.async_add_executor_job(camera.get_product_info)
+    ret, _ = camera.get_product_info()
 
     if ret == ERROR_AQARA_CAMERA_UNAVAILABLE:
         raise CannotConnect
@@ -53,6 +57,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             ret,
         )
         raise InvalidResponse
+
+    config = {CONF_RTSP_AUTH: entry.data.get(CONF_RTSP_AUTH, True)}
+    await hass.async_add_executor_job(camera.prepare, config)
+
     data = {
         "config": entry.data,
         "camera": camera

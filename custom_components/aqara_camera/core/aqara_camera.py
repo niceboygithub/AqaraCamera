@@ -1,5 +1,6 @@
 """Class for Aqara Camera component."""
 import socket
+import time
 import json
 import re
 import logging
@@ -18,6 +19,7 @@ from .const import (
     SPAN_X,
     SPAN_Y,
     CONF_MODEL,
+    CONF_RTSP_AUTH,
     DIR_UP,
     DIR_DOWN,
     DIR_LEFT,
@@ -26,9 +28,9 @@ from .const import (
     ERROR_AQARA_CAMERA_AUTH,
     AQARA_CAMERA_SUCCESS,
     PERSIST_REC_MODE,
-    SYS_PTZ_MOVING
+    SYS_PTZ_MOVING,
+    MD5_MI_MOTOR_ARMV7L
 )
-MD5_MI_MOTOR_ARMV7L = "191a742a619ecaf1120378ce3729c77d"
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -36,7 +38,7 @@ _LOGGER = logging.getLogger(__name__)
 class AqaraCamera():
     """ Aqara Camera main class """
 
-    def __init__(self, host, model, stream, verbose=False):
+    def __init__(self, hass, host, model, stream, verbose=False):
         """ init """
         self._shell = None
         self._host = host
@@ -44,8 +46,10 @@ class AqaraCamera():
         self._stream = stream
         self._debug = verbose
         self._mi_motor = False
-        self.rtsp_url = ""
         self._properties: dict = {}
+
+        self.hass = hass
+        self.rtsp_url = ""
 
     @property
     def brand(self):
@@ -141,9 +145,8 @@ class AqaraCamera():
             return AQARA_CAMERA_SUCCESS, ""
         return ERROR_AQARA_CAMERA_UNAVAILABLE, ""
 
-    def get_device_info(self):
-        """ get device info """
-        result = {}
+    def _get_all_properties(self):
+        """get device all properties"""
         raw = self._shell.get_prop("")
 
         pattern = r'(\[[^[]+\])'
@@ -159,18 +162,34 @@ class AqaraCamera():
             except StopIteration:
                 break
 
-        model = self._properties["persist.sys.model"]
-        mac = self._properties["persist.sys.miio_mac"]
-        name = self._properties["ro.sys.name"]
-        result[CONF_NAME] = "{}-{}".format(
-            name, mac[-5:].upper().replace(":", ""))
-        result[CONF_MODEL] = model
+    def get_device_info(self):
+        """ get device info """
+        result = {}
+        self._get_all_properties()
+
+        model = self._properties.get("persist.sys.model", None)
+        if model is None:
+            # Try again
+            self._get_all_properties()
+
+        mac = self._properties.get("persist.sys.miio_mac", None)
+        name = self._properties.get("ro.sys.name", None)
+        if mac and name:
+            result[CONF_NAME] = "{}-{}".format(
+                name, mac[-5:].upper().replace(":", ""))
+            result[CONF_MODEL] = model
 
         return result
 
-    def prepare(self):
+    def prepare(self, config: dict):
         """ prepare camera """
         self._shell.check_bin('mi_motor', MD5_MI_MOTOR_ARMV7L , 'bin/armv7l/mi_motor')
+        rtsp_auth = config.get(CONF_RTSP_AUTH, True)
+        if not rtsp_auth:
+            command = "pkill rtsp; rtsp &"
+        else:
+            command = "pkill rtsp; rtsp -a &"
+        self._shell.run_command(command)
 
         POST_INIT_SH = "/data/scripts/post_init.sh"
         if not self._shell.file_exist(POST_INIT_SH):

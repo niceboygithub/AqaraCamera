@@ -15,6 +15,7 @@ DOMAIN = "aqara_camera"
 
 CONF_STREAM = "stream"
 CONF_MODEL = "model"
+CONF_RTSP_AUTH ="rtsp_auth"
 
 STREAMS = [STREAM_MAIN, STREAM_SUB, STREAM_SUB2]
 

@@ -14,7 +14,8 @@
                 "data": {
                     "host": "\u4e3b\u6a5f\u7aef",
                     "stream": "Stream",
-                    "model": "\u578b\u865f"
+                    "model": "\u578b\u865f",
+                    "rtsp_auth": "\u555f\u7528 RTSP \u5e33\u5bc6"
                 }
             }
         }
