@@ -71,6 +71,7 @@ class HassAqaraCamera(Camera):
         self._unique_id = config_entry.entry_id
         self._motion_status = 0
         self._ffmpeg = hass.data.get(DATA_FFMPEG, None)
+        self._attr_supported_features = SUPPORT_STREAM
 
     async def async_added_to_hass(self):
         """Handle entity addition to hass."""
@@ -101,14 +102,6 @@ class HassAqaraCamera(Camera):
     def unique_id(self):
         """Return the entity unique ID."""
         return self._unique_id
-
-    @property
-    def supported_features(self):
-        """Return supported features."""
-        if len(self._session.camera_rtsp_url) >= 1:
-            return SUPPORT_STREAM
-
-        return None
 
     @property
     def device_info(self):
