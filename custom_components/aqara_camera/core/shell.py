@@ -62,6 +62,10 @@ class TelnetShell(Telnet):
             return True
         return False
 
+    def get_running_ps(self) -> str:
+        """ get processes list """
+        return self.run_command("ps")
+
     def check_bin(self, filename: str, md5: str, url=None) -> bool:
         """Check binary md5 and download it if needed."""
         # used * for development purposes

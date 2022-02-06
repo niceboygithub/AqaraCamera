@@ -184,12 +184,6 @@ class AqaraCamera():
     def prepare(self, config: dict):
         """ prepare camera """
         self._shell.check_bin('mi_motor', MD5_MI_MOTOR_ARMV7L , 'bin/armv7l/mi_motor')
-        rtsp_auth = config.get(CONF_RTSP_AUTH, True)
-        if not rtsp_auth:
-            command = "pkill rtsp; rtsp &"
-        else:
-            command = "pkill rtsp; rtsp -a &"
-        self._shell.run_command(command)
 
         POST_INIT_SH = "/data/scripts/post_init.sh"
         if not self._shell.file_exist(POST_INIT_SH):
@@ -204,6 +198,17 @@ class AqaraCamera():
             self._shell.run_command(command)
             command = "chattr +i {}".format(POST_INIT_SH)
             self._shell.run_command(command)
+
+        rtsp_auth = config.get(CONF_RTSP_AUTH, True)
+        processes = self._shell.get_running_ps()
+        if not rtsp_auth:
+            if "rtsp -a" in processes:
+                command = "pkill rtsp; rtsp &"
+                self._shell.run_command(command)
+        else:
+            if "rtsp -a" not in processes:
+                command = "pkill rtsp; rtsp -a &"
+                self._shell.run_command(command)
 
     def ptz_control(self, direction, span_x, span_y):
         """ ptz control """

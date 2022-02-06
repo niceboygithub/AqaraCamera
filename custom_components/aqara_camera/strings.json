@@ -5,7 +5,8 @@
           "data": {
             "host": "[%key:common::config_flow::data::host%]",
             "model": "Model",
-            "stream": "Stream"
+            "stream": "Stream",
+            "rtsp_auth": "RTSP Auth"
           }
         }
       },
