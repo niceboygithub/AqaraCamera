@@ -46,6 +46,7 @@ class AqaraCamera():
         self._stream = stream
         self._debug = verbose
         self._mi_motor = False
+        self._rtsp_auth = True  # for fast access
         self._properties: dict = {}
 
         self.hass = hass
@@ -106,6 +107,9 @@ class AqaraCamera():
             if shell.login():
                 self._shell = shell
 
+            if self._shell.file_exist("/data/bin/mi_motor"):
+                 self._mi_motor = True
+
         except (ConnectionRefusedError, socket.timeout) as err:
             self.debug(f"Can't prepare camera: {err}")
             return False
@@ -128,9 +132,10 @@ class AqaraCamera():
     def get_product_info(self):
         """ get product info """
         try:
-            if self._shell.file_exist("/data/bin/mi_motor"):
-                self._mi_motor = True
             raw = self._shell.get_prop("sys.camera_rtsp_url")
+            if len(raw) <= 6:
+                self._prepare_rtsp(self._rtsp_auth)
+                raw = self._shell.get_prop("sys.camera_rtsp_url")
             camera_rtsp_url = json.loads(raw.replace(r"\/", "/"))
         except Exception as err:
             return ERROR_AQARA_CAMERA_UNAVAILABLE, err
@@ -181,6 +186,24 @@ class AqaraCamera():
 
         return result
 
+    def _prepare_rtsp(self, rtsp_auth):
+        processes = self._shell.get_running_ps()
+        if not rtsp_auth:
+            if "rtsp -a" in processes:
+                command = "pkill rtsp; rtsp &"
+                self._shell.run_command(command)
+            if not self._shell.file_exist("/tmp/app_monitor.sh"):
+                command = 'sed "s/rtsp -a /rtsp /g" /bin/app_monitor.sh > /tmp/app_monitor.sh'
+                self._shell.run_command(command)
+                command = "chmod a+x /tmp/app_monitor.sh"
+                self._shell.run_command(command)
+                command = "pkill app_monitor.sh; /tmp/app_monitor.sh &"
+                self._shell.run_command(command)
+        else:
+            if "rtsp -a" not in processes:
+                command = "pkill rtsp; rtsp -a &"
+                self._shell.run_command(command)
+
     def prepare(self, config: dict):
         """ prepare camera """
         self._shell.check_bin('mi_motor', MD5_MI_MOTOR_ARMV7L , 'bin/armv7l/mi_motor')
@@ -199,16 +222,11 @@ class AqaraCamera():
             command = "chattr +i {}".format(POST_INIT_SH)
             self._shell.run_command(command)
 
-        rtsp_auth = config.get(CONF_RTSP_AUTH, True)
-        processes = self._shell.get_running_ps()
-        if not rtsp_auth:
-            if "rtsp -a" in processes:
-                command = "pkill rtsp; rtsp &"
-                self._shell.run_command(command)
-        else:
-            if "rtsp -a" not in processes:
-                command = "pkill rtsp; rtsp -a &"
-                self._shell.run_command(command)
+        self._rtsp_auth = config.get(CONF_RTSP_AUTH, True)
+        self._prepare_rtsp(self._rtsp_auth)
+        raw = self._shell.get_prop("sys.camera_rtsp_url")
+        if len(raw) <= 6:
+            self._prepare_rtsp(self._rtsp_auth)
 
     def ptz_control(self, direction, span_x, span_y):
         """ ptz control """

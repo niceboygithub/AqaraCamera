@@ -130,7 +130,6 @@ class HassAqaraCamera(Camera):
     ) -> bytes | None:
         """Return bytes of camera image."""
         if self._ffmpeg:
-            self._session.get_product_info()
             return await ffmpeg.async_get_image(
                 self.hass,
                 self._session.camera_rtsp_url,
