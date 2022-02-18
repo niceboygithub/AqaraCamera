@@ -189,9 +189,6 @@ class AqaraCamera():
     def _prepare_rtsp(self, rtsp_auth):
         processes = self._shell.get_running_ps()
         if not rtsp_auth:
-            if "rtsp -a" in processes:
-                command = "pkill rtsp; rtsp &"
-                self._shell.run_command(command)
             if not self._shell.file_exist("/tmp/app_monitor.sh"):
                 command = 'sed "s/rtsp -a /rtsp /g" /bin/app_monitor.sh > /tmp/app_monitor.sh'
                 self._shell.run_command(command)
@@ -199,9 +196,12 @@ class AqaraCamera():
                 self._shell.run_command(command)
                 command = "pkill app_monitor.sh; /tmp/app_monitor.sh &"
                 self._shell.run_command(command)
+            if "rtsp -a" in processes:
+                command = "pkill rtsp"
+                self._shell.run_command(command)
         else:
             if "rtsp -a" not in processes:
-                command = "pkill rtsp; rtsp -a &"
+                command = "pkill rtsp"
                 self._shell.run_command(command)
 
     def prepare(self, config: dict):

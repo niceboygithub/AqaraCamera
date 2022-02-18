@@ -8,6 +8,7 @@ from homeassistant.components import ffmpeg
 from homeassistant.components.camera import SUPPORT_STREAM, Camera
 from homeassistant.helpers import entity_platform
 from homeassistant.components.ffmpeg import DATA_FFMPEG
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.util import slugify
 from homeassistant.const import CONF_HOST
 
@@ -46,7 +47,9 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
         )
         ret = await hass.async_add_executor_job(camera.connect)
         if not ret:
-            raise CannotConnect
+            ret = await hass.async_add_executor_job(camera.connect)
+            if not ret:
+                raise CannotConnect
 
     await hass.async_add_executor_job(camera.get_device_info)
 
@@ -155,3 +158,7 @@ class HassAqaraCamera(Camera):
             self._session.ptz_control_preset(angle_x, angle_y, span_x, span_y)
         else:
             self._session.ptz_control(direction, span_x, span_y)
+
+
+class CannotConnect(HomeAssistantError):
+    """Error to indicate we cannot connect."""
