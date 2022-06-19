@@ -7,6 +7,8 @@ This is a way to [enable telnet](https://github.com/Wh1terat/aQRootG3) from #Wh1
 After enabled telnet, you need to finish the configuration before reboot G3.
 
 
+## ATTENTION :warning: : The Lumi company (Aqara manufacturer) started disable the post_init script and [telnet method](https://github.com/Wh1terat/aQRootG3#warningwarning-warning). If you still want to use this component, please do not update to latest firmware of the gateway/hub.
+
 ## Installation
 
 you can install component with [HACS](https://hacs.xyz),  custom repo: HACS > Integrations > 3 dots (upper top corner) > Custom repositories > URL: `niceboygithub/AqaraCamera` > Category: Integration
