@@ -36,7 +36,10 @@ _LOGGER = logging.getLogger(__name__)
 async def async_setup_entry(hass, config_entry, async_add_entities):
     """Add a Aqara camera from a config entry."""
 
-    camera = hass.data[DOMAIN][config_entry.entry_id].get("camera", None)
+    data = hass.data.get(DOMAIN, None)
+    camera = None
+    if data:
+        camera = hass.data[DOMAIN][config_entry.entry_id].get("camera", None)
     if not camera:
         camera = AqaraCamera(
             hass,

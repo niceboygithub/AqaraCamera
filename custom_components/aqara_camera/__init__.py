@@ -26,7 +26,7 @@ _LOGGER = logging.getLogger(__name__)
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up aqara camera from a config entry."""
-    hass.config_entries.async_setup_platforms(entry, PLATFORMS)
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = {"config": entry.data}
 
