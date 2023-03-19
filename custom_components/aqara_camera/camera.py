@@ -111,14 +111,21 @@ class HassAqaraCamera(Camera):
 
     @property
     def device_info(self):
+        if len(self._session.properties) >= 1:
+            return {
+                "identifiers": {
+                    (DOMAIN, slugify(f"{self._name}_{self._unique_id}"))
+                },
+                "name": self._name,
+                "manufacturer": self._session.brand,
+                "model": self._session.model,
+                "sw_version": self._session.fw_version,
+            }
         return {
             "identifiers": {
                 (DOMAIN, slugify(f"{self._name}_{self._unique_id}"))
             },
-            "name": self._name,
-            "manufacturer": self._session.brand,
-            "model": self._session.model,
-            "sw_version": self._session.fw_version,
+            "name": self._name
         }
 
     @property
