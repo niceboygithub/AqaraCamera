@@ -213,7 +213,9 @@ class AqaraCamera():
             command = "mkdir -p /data/scripts"
             self._shell.write(command.encode() + b"\n")
             time.sleep(1)
-            command = "echo -e '#!/bin/sh\r\n\r\nfw_manager.sh -r\r\n" \
+            command = "echo -e '#!/bin/sh\r\n\r\n " \
+                "[ -x /data/bin/mosquitto ] && /data/bin/mosquitto -d" \
+                "fw_manager.sh -r\r\n" \
                 "asetprop sys.camera_ptz_moving true\r\n" \
                 "fw_manager.sh -t -k' > {}".format(POST_INIT_SH)
             self._shell.run_command(command)

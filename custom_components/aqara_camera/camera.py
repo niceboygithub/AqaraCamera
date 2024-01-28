@@ -5,7 +5,7 @@ import logging
 import asyncio
 
 from homeassistant.components import ffmpeg
-from homeassistant.components.camera import SUPPORT_STREAM, Camera
+from homeassistant.components.camera import CameraEntityFeature, Camera
 from homeassistant.helpers import entity_platform
 from homeassistant.components.ffmpeg import DATA_FFMPEG
 from homeassistant.exceptions import HomeAssistantError
@@ -77,7 +77,7 @@ class HassAqaraCamera(Camera):
         self._unique_id = config_entry.entry_id
         self._motion_status = 0
         self._ffmpeg = hass.data.get(DATA_FFMPEG, None)
-        self._attr_supported_features = SUPPORT_STREAM
+        self._attr_supported_features = CameraEntityFeature.STREAM
 
     async def async_added_to_hass(self):
         """Handle entity addition to hass."""
