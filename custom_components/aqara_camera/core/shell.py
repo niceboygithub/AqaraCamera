@@ -137,5 +137,5 @@ class TelnetShellG3(TelnetShell):
         self.write(command.encode() + b"\n")
         command = "cd /"
         self.write(command.encode() + b"\n")
-        self.read_until(b"/ # ", timeout=10)
+        self.read_until(b" # ", timeout=3)
         return True
