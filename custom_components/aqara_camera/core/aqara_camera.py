@@ -108,7 +108,7 @@ class AqaraCamera():
                 self._shell = shell
 
             if self._shell.file_exist("/data/bin/mi_motor"):
-                 self._mi_motor = True
+                self._mi_motor = True
 
         except (ConnectionRefusedError, socket.timeout) as err:
             self.debug(f"Can't prepare camera: {err}")
@@ -136,7 +136,7 @@ class AqaraCamera():
             if len(raw) <= 6:
                 self._prepare_rtsp(self._rtsp_auth)
                 raw = self._shell.get_prop("sys.camera_rtsp_url")
-            camera_rtsp_url = json.loads(raw.replace(r"\/", "/"))
+            camera_rtsp_url = json.loads(raw.replace(r"\/ # ", "").replace("~ #", ""))
         except Exception as err:
             return ERROR_AQARA_CAMERA_UNAVAILABLE, err
 

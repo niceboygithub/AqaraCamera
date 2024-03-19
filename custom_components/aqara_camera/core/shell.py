@@ -5,7 +5,7 @@ from telnetlib import Telnet
 from typing import Union
 
 WGET = "(wget http://master.dl.sourceforge.net/project/aqarahub/{0}?viasf=1 " \
-       "-O /data/bin/{1} && chmod +x /data/bin/{1})"
+            "-O /data/bin/{1} && chmod +x /data/bin/{1})"
 
 
 class TelnetShell(Telnet):
@@ -68,14 +68,14 @@ class TelnetShell(Telnet):
     def check_bin(self, filename: str, md5: str, url=None) -> bool:
         """Check binary md5 and download it if needed."""
         # used * for development purposes
+        data = self.run_command("md5sum /data/bin/{}".format(filename))
+        if md5 in data:
+            return True
         if url:
             self.run_command("mkdir -p /data/bin\n")
             self.run_command(WGET.format(url, filename))
             return self.check_bin(filename, md5)
-        elif md5 in self.run_command("md5sum /data/bin/{}".format(filename)):
-            return True
-        else:
-            return False
+        return False
 
     def get_prop(self, property_value: str):
         """ get property """
@@ -101,8 +101,8 @@ class TelnetShell(Telnet):
         else:
             command = "setprop {} {}\n".format(property_value, value)
         self.write(command.encode() + b"\n")
-        self.read_until(self._suffix.encode())
-        self.read_until(self._suffix.encode())
+        self.read_until(self._suffix.encode(), timeout=3)
+        self.read_until(self._suffix.encode(), timeout=3)
 
     def get_version(self):
         """ get camera version """
@@ -115,27 +115,27 @@ class TelnetShellG3(TelnetShell):
     def __init__(self, host: str, password=None):
         """ init """
         super().__init__(host, password)
-        self._suffix = "/ # "
+        self._suffix = "~ # "
         self._aqara_property = True
+        self._password = password
 
     def login(self):
         """ login function """
         self.write(b"\n")
         self.read_until(b"login: ", timeout=1)
 
-        password = self._password
-        if self._password is None:
-            password = '\n'
-
         command = "root"
         self.write(command.encode() + b"\n")
-        if password:
+        if self._password:
             self.read_until(b"Password: ", timeout=1)
-            self.write(password.encode() + b"\n")
+            self.write(self._password.encode() + b"\n")
+        self.read_until(self._suffix.encode(), timeout=3)
 
         command = "stty -echo"
         self.write(command.encode() + b"\n")
         command = "cd /"
         self.write(command.encode() + b"\n")
-        self.read_until(b" # ", timeout=3)
+        self._suffix = "/ # "
+
+        self.read_until(self._suffix.encode(), timeout=3)
         return True
