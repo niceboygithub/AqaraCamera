@@ -1,6 +1,6 @@
 """Constants for Aqara Camera component."""
 
-STREAM_MAIN = "Main (1080p)"
+STREAM_MAIN = "Main (1080p/1296p)"
 STREAM_SUB = "Sub (720p)"
 STREAM_SUB2 = "Sub (360p)"
 

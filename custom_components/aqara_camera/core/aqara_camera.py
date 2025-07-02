@@ -146,7 +146,14 @@ class AqaraCamera():
             elif self._stream == STREAM_SUB:
                 self.rtsp_url = camera_rtsp_url["720p"]
             else:
-                self.rtsp_url = camera_rtsp_url["1080p"]
+                self.rtsp_url = camera_rtsp_url.get("1080p")
+                if not self.rtsp_url:
+                    self.rtsp_url = camera_rtsp_url.get("1296p")
+                    if not self.rtsp_url:
+                        self.rtsp_url = camera_rtsp_url.get("1520p")
+                        if not self.rtsp_url:
+                            return ERROR_AQARA_CAMERA_UNAVAILABLE, ""
+
             return AQARA_CAMERA_SUCCESS, ""
         return ERROR_AQARA_CAMERA_UNAVAILABLE, ""
 
